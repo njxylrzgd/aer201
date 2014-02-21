@@ -1,0 +1,4 @@
+EEPROM
+PC interface
+RTC
+AD converter

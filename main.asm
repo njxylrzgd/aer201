@@ -1,7 +1,7 @@
 ;Available functions
 ;INITIALIZE_LCD, DISPLAY_TABLE
 #include <p18f4620.inc>
-#include <lcd.inc>
+#include <extern.inc>
 		list P=18F4620, F=INHX32, C=160, N=80, ST=OFF, MM=OFF, R=DEC
 
 PORTB_data              equ     0x40

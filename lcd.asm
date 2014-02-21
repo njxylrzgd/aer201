@@ -240,13 +240,13 @@ Again
 
 Welcome_message         db	"Welcome User", 0
 Press_any_key           db  "Press any key", 0
-Menu                    db  "Log - Press A, Operation - Press 3", 0
+Menu                    db  "Log - A Op - 3", 0
 Working                 db  "Working...", 0
-Finished                db  "Task completed, returning to Home", 0
+Finished                db  "Task completed", 0
 Abort                   db  "Operation Aborted", 0
-Log_menu                db  "A - View Log, 3 - Upload", 0
+Log_menu                db  "A-See Log 3-Upload", 0
 Upload_message          db  "uploading..."
-Log_secondary_menu      db  "Select tasks: Task 1, Task 2, Task 3", 0
+Log_secondary_menu      db  "Select: Task 1,2,3", 0
 Viewlog_menu               db  "0:_ 1:_ 2:_ 3:_, Press A to Home", 0
 
 end;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
