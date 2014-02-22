@@ -1,9 +1,5 @@
     #include <p18f4620.inc>
 
-data_1      EQU     0x0
-data_2      EQU     0x1
-data_3      EQU     0x2
-
 READ_EEPROM macro   addL, addH, eeprom_target
 ;   addresses - literals, eeprom_target a register
 ;   read from specified EEPROM address and store at target
