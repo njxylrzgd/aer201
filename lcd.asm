@@ -10,10 +10,6 @@ delay2	  EQU		0x26
 delay3	  EQU		0x27
 delay4    equ       0x28
 
-
-
-
-
 display     macro   table_name
             movlw		upper table_name
             movwf		TBLPTRU
@@ -31,7 +27,9 @@ store       macro   var_name,   val
             movwf   var_name
             endm
 
+
             code
+
             global Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second
             global log_menu, main_menu, operation, upload_msg, viewlog_msg, show_log
             global operation, finito
@@ -123,6 +121,7 @@ INIT_LCD
         movlw     B'00000001'    ; Clear ram
         call      WR_INS
         return
+
 
 CLR_LCD
         movlw   B'11000000'         ; 2nd line
@@ -222,15 +221,6 @@ delay1second
             bnz     d2sloop
         return
 
-delayhalfsecond
-        movlw   D'10'
-        movwf   delay3, 0
-        dhalfsloop
-            decf    delay3, 1
-            call delay5ms
-            bnz     d2sloop
-        return
-
 Again
               call      WR_DATA
               tblrd+*
@@ -240,14 +230,14 @@ Again
 
 Welcome_message         db	"Welcome User", 0
 Press_any_key           db  "Press any key", 0
-Menu                    db  "Log - A Op - 3", 0
+Menu                    db  "Log-A Start-3", 0
 Working                 db  "Working...", 0
 Finished                db  "Task completed", 0
 Abort                   db  "Operation Aborted", 0
-Log_menu                db  "A-See Log 3-Upload", 0
+Log_menu                db  "Log-A Upload-3", 0
 Upload_message          db  "uploading..."
-Log_secondary_menu      db  "Select: Task 1,2,3", 0
-Viewlog_menu               db  "0:_ 1:_ 2:_ 3:_, Press A to Home", 0
+Log_secondary_menu      db  "Select: 1,2,3", 0
+Viewlog_menu               db  "0:_ 1:_ 2:_ 3:_", 0
 
 end;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
