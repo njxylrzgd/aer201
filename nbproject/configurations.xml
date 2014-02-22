@@ -15,7 +15,7 @@
                    projectFiles="true">
       <itemPath>lcd.asm</itemPath>
       <itemPath>main.asm</itemPath>
-      <itemPath>eeprom.asm</itemPath>
+      <itemPath>i2c.asm</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

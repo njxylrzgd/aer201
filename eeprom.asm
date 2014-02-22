@@ -40,4 +40,10 @@ WR_EEPROM   macro   addH,   addL,  eeprom_data
 
     endm
 
-END
+    code
+    global EEPROM_REFRESH
+
+EEPROM_REFRESH
+    return
+
+    END

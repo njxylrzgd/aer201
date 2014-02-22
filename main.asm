@@ -22,6 +22,9 @@ keypad_probing_result   equ     0x41
 		CONFIG EBTR0 = OFF, EBTR1 = OFF, EBTR2 = OFF, EBTR3 = OFF
 		CONFIG EBTRB = OFF
 
+
+
+
 ;;;;;;Vectors;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 			org		0x0000
@@ -30,6 +33,7 @@ keypad_probing_result   equ     0x41
 			retfie
 			org		0x18				;low priority ISR
 			retfie
+
 
 ;;;;;;;;;;;;;;;;;;;Main function;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 welcome
@@ -118,7 +122,7 @@ upload_selected
 ;upload stuff if it's selected
         call upload_msg
         call finito
-        bra welcome
+        goto welcome
 
 ;*************** user chooses to view log ***********************************
 viewlog_selected
@@ -128,14 +132,6 @@ viewlog_selected
 log_secondary_menu_selected
         movff PORTB, PORTB_data     ;store data from PORTB
 
-        ;test 1,2,3, if nothing then loop to itself
-;
-;        logsec_menu_loop
-;             movff  PORTB, PORTB_data   ;store at another variable
-;             btfsc  PORTB_data, 1       ;test if key is pressed
-;                 bra log_3_selected                ;skip if PORTB 2 is clear (none pressed)
-;             bra logsec_menu_loop         ;branches back to itself, keep polling
-;        test if 3 is pressed
         test_3
             movlw b'00100010'           ;move 3 into W
             xorwf PORTB_data, 0         ;XOR PORTB with 3, becomes 0 if pressed
@@ -176,5 +172,5 @@ home_select_probe
         movlw b'00110010'   ;move A into W
         xorwf PORTB_data, 0 ;XOR PORTB with A, store in W
         bnz home_select_probe         ;will loop if anything else than A pressed
-        bra welcome
-end;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        goto menu
+    end;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

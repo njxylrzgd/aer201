@@ -22,12 +22,6 @@ display     macro   table_name
             call Again
             endm
 
-store       macro   var_name,   val
-            movlw   val
-            movwf   var_name
-            endm
-
-
             code
 
             global Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second
@@ -35,12 +29,14 @@ store       macro   var_name,   val
             global operation, finito
 ;;;;;;;;;;;;;;Menu options;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Home
+;initialize LCD and EEPROM
           call CLR_PORTS                ;clear the ports
 		  call INIT_LCD                 ;initialize LCD
           display Welcome_message       ;display welcome msg, wait for 2 sec
           call delay2second
           call CLR_LCD                  ;clear LCD and write Home message
           display Press_any_key
+
           return
 
 main_menu
@@ -230,11 +226,11 @@ Again
 
 Welcome_message         db	"Welcome User", 0
 Press_any_key           db  "Press any key", 0
-Menu                    db  "Log-A Start-3", 0
+Menu                    db  "A-LOG 3-START", 0
 Working                 db  "Working...", 0
 Finished                db  "Task completed", 0
-Abort                   db  "Operation Aborted", 0
-Log_menu                db  "Log-A Upload-3", 0
+Abort                   db  "Aborted", 0
+Log_menu                db  "A-VIEW 3-UPLOAD", 0
 Upload_message          db  "uploading..."
 Log_secondary_menu      db  "Select: 1,2,3", 0
 Viewlog_menu               db  "0:_ 1:_ 2:_ 3:_", 0

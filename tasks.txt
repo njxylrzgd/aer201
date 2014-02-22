@@ -1,4 +1,7 @@
-EEPROM
-PC interface
+EEPROM ; almost done
+PC interface ;
 RTC
-AD converter
+AD converter ; pseudo code done
+emergency button
+motor output 
+fill in working
