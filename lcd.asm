@@ -10,6 +10,11 @@ delay2	  EQU		0x26
 delay3	  EQU		0x27
 delay4    equ       0x28
 
+store       macro   var_name,   val
+            movlw   val
+            movwf   var_name
+            endm
+
 display     macro   table_name
             movlw		upper table_name
             movwf		TBLPTRU
@@ -29,6 +34,7 @@ display     macro   table_name
             global operation, finito
 ;;;;;;;;;;;;;;Menu options;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Home
+          call CLR_LCD   
           display Welcome_message       ;display welcome msg, wait for 2 sec
           call delay2second
           call CLR_LCD                  ;clear LCD and write Home message
@@ -81,20 +87,22 @@ finito
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;LCD commands;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 CLR_PORTS
-        clrf		TRISA
-
-        movlw     b'11110010'    ; Set required keypad inputs
-        movwf     TRISB
-
-		clrf		TRISC
-	    clrf		TRISD
+        store   TRISA,  B'00001111'     ;clear ports
+        store   TRISB,  b'11110010'    ; Set required keypad inputs
+		store	TRISC,  B'00011000'
+	    store   TRISD, 0x0
 
         clrf      LATA
         clrf      LATB
         clrf      LATC
         clrf      LATD
 
+        clrf      PORTA
         clrf      PORTB
+        clrf      PORTC
+        clrf      PORTD
+
+        store   ADCON1, B'00001011'     ; set AD converter
         return
 
 INIT_LCD

@@ -1,7 +1,7 @@
     extern Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD
     extern log_menu, main_menu, operation, upload_msg, viewlog_msg, show_log
     extern operation, finito
-    extern INIT_I2C, SET_RTC_VAL, INIT_READ, read_RTC_Nack, read_RTC_ack
+    ;extern INIT_I2C, SET_RTC_VAL, INIT_READ, read_RTC_Nack, read_RTC_ack
 
 ;************** GENERAL *********************
 ;************** MACRO   *********************
@@ -9,6 +9,19 @@
 store       macro   var_name,   val
             movlw   val
             movwf   var_name
+            endm
+
+
+display     macro   table_name
+            movlw		upper table_name
+            movwf		TBLPTRU
+            movlw		high table_name
+            movwf		TBLPTRH
+            movlw		low table_name
+            movwf		TBLPTRL
+            tblrd*
+            movf		TABLAT, W
+            call Again
             endm
 
 

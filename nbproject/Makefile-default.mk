@@ -45,17 +45,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=lcd.asm main.asm i2c.asm
+SOURCEFILES_QUOTED_IF_SPACED=lcd.asm main.asm
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/lcd.o ${OBJECTDIR}/main.o ${OBJECTDIR}/i2c.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/lcd.o.d ${OBJECTDIR}/main.o.d ${OBJECTDIR}/i2c.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/lcd.o ${OBJECTDIR}/main.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/lcd.o.d ${OBJECTDIR}/main.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/lcd.o ${OBJECTDIR}/main.o ${OBJECTDIR}/i2c.o
+OBJECTFILES=${OBJECTDIR}/lcd.o ${OBJECTDIR}/main.o
 
 # Source Files
-SOURCEFILES=lcd.asm main.asm i2c.asm
+SOURCEFILES=lcd.asm main.asm
 
 
 CFLAGS=
@@ -95,14 +95,6 @@ ${OBJECTDIR}/main.o: main.asm  nbproject/Makefile-${CND_CONF}.mk
 	@${DEP_GEN} -d "${OBJECTDIR}/main.o"
 	@${FIXDEPS} "${OBJECTDIR}/main.o.d" $(SILENT) -rsi ${MP_AS_DIR} -c18 
 	
-${OBJECTDIR}/i2c.o: i2c.asm  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR} 
-	@${RM} ${OBJECTDIR}/i2c.o.d 
-	@${RM} ${OBJECTDIR}/i2c.o 
-	@${FIXDEPS} dummy.d -e "${OBJECTDIR}/i2c.err" $(SILENT) -c ${MP_AS} $(MP_EXTRA_AS_PRE) -d__DEBUG -d__MPLAB_DEBUGGER_PICKIT2=1 -q -p$(MP_PROCESSOR_OPTION)  -l\"${OBJECTDIR}/i2c.lst\" -e\"${OBJECTDIR}/i2c.err\" $(ASM_OPTIONS)   -o\"${OBJECTDIR}/i2c.o\" \"i2c.asm\" 
-	@${DEP_GEN} -d "${OBJECTDIR}/i2c.o"
-	@${FIXDEPS} "${OBJECTDIR}/i2c.o.d" $(SILENT) -rsi ${MP_AS_DIR} -c18 
-	
 else
 ${OBJECTDIR}/lcd.o: lcd.asm  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} ${OBJECTDIR} 
@@ -119,14 +111,6 @@ ${OBJECTDIR}/main.o: main.asm  nbproject/Makefile-${CND_CONF}.mk
 	@${FIXDEPS} dummy.d -e "${OBJECTDIR}/main.err" $(SILENT) -c ${MP_AS} $(MP_EXTRA_AS_PRE) -q -p$(MP_PROCESSOR_OPTION)  -l\"${OBJECTDIR}/main.lst\" -e\"${OBJECTDIR}/main.err\" $(ASM_OPTIONS)   -o\"${OBJECTDIR}/main.o\" \"main.asm\" 
 	@${DEP_GEN} -d "${OBJECTDIR}/main.o"
 	@${FIXDEPS} "${OBJECTDIR}/main.o.d" $(SILENT) -rsi ${MP_AS_DIR} -c18 
-	
-${OBJECTDIR}/i2c.o: i2c.asm  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR} 
-	@${RM} ${OBJECTDIR}/i2c.o.d 
-	@${RM} ${OBJECTDIR}/i2c.o 
-	@${FIXDEPS} dummy.d -e "${OBJECTDIR}/i2c.err" $(SILENT) -c ${MP_AS} $(MP_EXTRA_AS_PRE) -q -p$(MP_PROCESSOR_OPTION)  -l\"${OBJECTDIR}/i2c.lst\" -e\"${OBJECTDIR}/i2c.err\" $(ASM_OPTIONS)   -o\"${OBJECTDIR}/i2c.o\" \"i2c.asm\" 
-	@${DEP_GEN} -d "${OBJECTDIR}/i2c.o"
-	@${FIXDEPS} "${OBJECTDIR}/i2c.o.d" $(SILENT) -rsi ${MP_AS_DIR} -c18 
 	
 endif
 
