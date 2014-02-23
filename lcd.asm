@@ -24,19 +24,15 @@ display     macro   table_name
 
             code
 
-            global Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second
+            global Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD
             global log_menu, main_menu, operation, upload_msg, viewlog_msg, show_log
             global operation, finito
 ;;;;;;;;;;;;;;Menu options;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Home
-;initialize LCD and EEPROM
-          call CLR_PORTS                ;clear the ports
-		  call INIT_LCD                 ;initialize LCD
           display Welcome_message       ;display welcome msg, wait for 2 sec
           call delay2second
           call CLR_LCD                  ;clear LCD and write Home message
           display Press_any_key
-
           return
 
 main_menu

@@ -1,7 +1,9 @@
-EEPROM ; almost done
-PC interface ;
-RTC
+
 AD converter ; pseudo code done
 emergency button
-motor output 
+motor output ;outputs 8MHz at RA6
 fill in working
+
+PC interface ;
+RTC; doesn't work
+EEPROM ; almost done

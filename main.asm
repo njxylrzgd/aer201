@@ -6,10 +6,11 @@
 
 PORTB_data              equ     0x40
 keypad_probing_result   equ     0x41
-
+EEPROM_LOCH             equ     0x42
+EEPROM_LOCL             equ     0x43
 ;;;;;;Configuration Bits;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-		CONFIG OSC=INTIO67, FCMEN=OFF, IESO=OFF
+		CONFIG OSC=INTIO7, FCMEN=OFF, IESO=OFF
 		CONFIG PWRT = OFF, BOREN = SBORDIS, BORV = 3
 		CONFIG WDT = OFF, WDTPS = 32768
 		CONFIG MCLRE = ON, LPT1OSC = OFF, PBADEN = OFF, CCP2MX = PORTC
@@ -28,7 +29,7 @@ keypad_probing_result   equ     0x41
 ;;;;;;Vectors;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 			org		0x0000
-			goto	welcome
+			goto	boot
 			org		0x08				;high priority ISR
 			retfie
 			org		0x18				;low priority ISR
@@ -36,9 +37,18 @@ keypad_probing_result   equ     0x41
 
 
 ;;;;;;;;;;;;;;;;;;;Main function;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+boot
+;*initialize everything
+        call CLR_PORTS                ;clear the ports
+		call INIT_LCD                 ;initialize LCD
+        store   EEPROM_LOCH, 0x01     ;specify EEPROM location
+        store   EEPROM_LOCL, 0x00
+
+
+
 welcome
 		  call Home                     ;display Home
-          bra menu                     ;poll keys and display menu accordingly
+          goto menu                     ;poll keys and display menu accordingly
 
 menu
 ; shows menu if any key is pressed
@@ -87,7 +97,7 @@ operation_selected
 ; what to do if operation selected
          call operation     ;display operation
          call finito        ;display finish message after operation
-         bra    welcome     ;goes back to home
+         goto    welcome     ;goes back to home
 
 log_selected
 ; what to do if log selected
@@ -174,3 +184,10 @@ home_select_probe
         bnz home_select_probe         ;will loop if anything else than A pressed
         goto menu
     end;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+
+
+
