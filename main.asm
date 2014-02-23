@@ -32,6 +32,7 @@ RTC_L               equ         0x55
 RTC_H               equ         0x56
 RTC_Month              equ     0x57
 
+
 ;;;;;;Configuration Bits;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 		CONFIG OSC=INTIO7, FCMEN=OFF, IESO=OFF
@@ -102,13 +103,13 @@ SetRTC ; NOTE: only for initialization purpose
     store temp2, 0x00
     call WriteToI2CBuffer
     store temp1, 0x02 ; set hour
-    store temp2, 0x23
+    store temp2, 0x22
     call WriteToI2CBuffer
     store temp1, 0x03 ; set day
     store temp2, 0x05
     call WriteToI2CBuffer
     store temp1, 0x04 ; set date
-    store temp2, 0x21
+    store temp2, 0x22
     call WriteToI2CBuffer
     store temp1, 0x05 ; set month
     store temp2, 0x02
@@ -356,6 +357,9 @@ CalculateTimeDiff
         addwf RTC_Minute_Diff
     EndCalculation
     return
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;Main function;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 boot
 ;*initialize everything
@@ -526,17 +530,48 @@ home_select_probe
 
 ;********************* INSPECTION SUBROUTINES *********************************
 detection
+    ; initialize variables
+    store temp1, 0x00       ;temp1 stores the number of LEDs that are working
+    movlw   0x1
+
     ;rotate plate once, send pulse to motor
 
-    ;read from RA0(IR), if not true branch to storage
+    ;read from RA0(IR), if true (IR sensors can't sense anything) loop again
+    btfsc PORTA, 0
+    bra detection
 
     ;read from RA1-3
+    btfss PORTA, 1  ;test if the first light is activated, TRUE -> add 1 to temp1
+    addwf   temp1, 1
+    btfss PORTA, 2  ;test if the second light is activated, TRUE -> add 1 to temp1
+    addwf   temp1, 1
+    btfss PORTA, 3  ;test if the third light is activated, TRUE -> add 1 to temp1
+    addwf   temp1, 1
 
-    status_storage
-        ;increment the corresponding register
+    ;increment the corresponding register
+    movf temp1
+    btfsc STATUS, Z   ;check if temp1 is 0 (if the Z bit is set)
+    incf not_working    ;add to the not_working counter (no light is lit)
+
+    sublw 1
+    btfsc STATUS, Z   ;check if 1
+    incf one_working  ;add if true
+
+    movf temp1        ;WREG is changed, reload
+    sublw 2           ;check if 2
+    btfsc STATUS, Z
+    incf two_working  ; add if it becomes 0 (TRUE)
+
+    movf temp1        ;WREG is changed, reload
+    sublw 3           ;check if 2
+    btfsc STATUS, Z
+    incf three_working  ; add if true
 
     ;decrement curr_light_num, if not 0, loop
+    decf curr_light_num
+    btfss STATUS, Z
+    bra  detection
 
-    ;store at EEPROM
-
+    ;store in EEPROM
+    
     return

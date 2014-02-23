@@ -5,5 +5,5 @@ motor output ;outputs 8MHz at RA6
 fill in working
 
 PC interface ;
-RTC; doesn't work
+RTC; work but need to find difference
 EEPROM ; almost done
