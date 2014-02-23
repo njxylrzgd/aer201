@@ -213,6 +213,8 @@ DisplayRTC_BottomLeft
     movff RTC_L, WREG
     call WR_DATA
 ;    DisplayOnLCD TableDate, B'10000000'
+    movlw   " "
+    call WR_DATA
     movff RTC_Year, WREG
     call ConvertRTC
     movff RTC_H, WREG
@@ -367,12 +369,11 @@ boot
         store two_working, 0            
         store three_working, 0
         call InitializeI2C
+        ;call SetRTC
 
 
 welcome
 		  call Home                     ;display Home
-          call CLR_LCD
-          call DisplayRTC_BottomLeft
           goto menu                     ;poll keys and display menu accordingly
 
 menu
@@ -380,6 +381,8 @@ menu
          movff  PORTB, PORTB_data   ;store at another variable
 
          main_menu_loop
+             call CLR_LCD
+             call DisplayRTC_BottomLeft
              movff  PORTB, PORTB_data   ;store at another variable
              btfsc  PORTB_data, 1       ;test if key is pressed
                  bra pressed                ;skip if PORTB 2 is clear (none pressed)
