@@ -9,8 +9,6 @@ store    macro   var_name,   val
          movwf   var_name
          endm
 
-
-
     code
 
     global INIT_I2C, SET_RTC_VAL, INIT_READ

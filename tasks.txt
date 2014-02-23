@@ -2,7 +2,7 @@
 AD converter ; pseudo code done
 emergency button
 motor output ;outputs 8MHz at RA6
-fill in working
+fill in working;
 
 PC interface ;
 RTC; work but need to find difference

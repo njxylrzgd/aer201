@@ -4,6 +4,7 @@
 #include <extern.inc>
 		list P=18F4620, F=INHX32, C=160, N=80, ST=OFF, MM=OFF, R=DEC
 
+PORTC_data              equ     0x3F
 PORTB_data              equ     0x40
 keypad_probing_result   equ     0x41
 EEPROM_LOCH             equ     0x42
@@ -14,6 +15,7 @@ not_working             equ     0x45
 one_working             equ     0x46
 two_working             equ     0x47
 three_working           equ     0x48
+num_present             equ     0x58    
 
 temp1                   equ     0x49
 temp2                   equ     0x4A
@@ -24,6 +26,7 @@ RTC_Year              equ     0x4D
 RTC_Date              equ     0x4E
 RTC_Day              equ     0x4F
 RTC_Hour              equ     0x50
+RTC_Hour_Old          equ       0x59    ;999999999
 RTC_Second_Diff       equ       0x51
 RTC_Second_Old       equ       0x52
 RTC_Minute_Diff       equ       0x53
@@ -214,7 +217,7 @@ DisplayRTC_BottomLeft
     movff RTC_L, WREG
     call WR_DATA
 ;    DisplayOnLCD TableDate, B'10000000'
-    movlw   " "
+    movlw   " "     ;blank space 
     call WR_DATA
     movff RTC_Year, WREG
     call ConvertRTC
@@ -242,19 +245,20 @@ DisplayRTC_BottomLeft
 CalculateTimeDiff
     LowSecond
         ; lower digit of second
-        movff RTC_Second, WREG
+        movff RTC_Second, WREG  ;store new in temp1
         andlw 0x0F ; read lower nibble only
         movwf temp1
-        movff RTC_Second_Old, WREG
+
+        movff RTC_Second_Old, WREG  ;store old in temp2
         andlw 0x0F
         movwf temp2
+
         ; temp1 (new) - temp2 (old)
         movff temp2, WREG
         subwf temp1, 0 ; put result in WREG
-        bnn HighSecond_temp ; if result not negative
-        ; go deal with higher bit
-        ; if negative, then add 10 to it
-        addlw d'10'
+        bnn HighSecond_temp ; if result not negative, go deal with higher bit
+        
+        addlw d'10' ; else if negative, then add 10 to it
         andlw 0x0F ; mask to have lower bit only
         movwf RTC_Second_Diff
         ; and add 1 to the high digit of second of the OLD one
@@ -359,34 +363,222 @@ CalculateTimeDiff
     return
 
 
+;*************************** EEPROM stuff ***************************************
+;*******************************************************************************
+store_EEPROM_log
+;used in the end of detection process
+;store results in the permanent log by shifting everything down one row
+    store EEPROM_LOCH, 0x05     ;initialize counters for swaps
+    store EEPROM_LOCL, 0x03
+
+    L_LOOP
+        store EEPROM_LOCH, 0x05     ;restore variable each loop
+
+        H_LOOP                  ;loop for higher bit addresses
+            decf EEPROM_LOCH    ;decrement address and read the previous row
+            RD_EEPROM  EEPROM_LOCL, EEPROM_LOCH, temp1
+            incf EEPROM_LOCH    ;increment and write to the current row
+            WR_EEPROM  EEPROM_LOCL, EEPROM_LOCH, temp1
+
+            decf EEPROM_LOCH    ;decrement higher bit addresses
+
+            store temp1, 0x02
+            bne temp1, EEPROM_LOCH, H_LOOP
+
+        store temp1, 0x03
+        beq temp1, EEPROM_LOCL, store_three
+
+        store temp1, 0x02
+        beq temp1, EEPROM_LOCL, store_two
+
+        store temp1, 0x01
+        beq temp1, EEPROM_LOCL, store_one
+
+        store temp1, 0x00
+        beq temp1, EEPROM_LOCL, store_zero
+
+        decremente
+            store temp1, 0x01
+            decf EEPROM_LOCL
+            bne temp1, EEPROM_LOCL, L_LOOP
+    return
+
+store_three
+    WR_EEPROM   EEPROM_LOCH, EEPROM_LOCL, three_working
+    bra decremente
+
+store_two
+    WR_EEPROM   EEPROM_LOCH, EEPROM_LOCL, two_working
+    bra decremente
+
+store_one
+    WR_EEPROM   EEPROM_LOCH, EEPROM_LOCL, one_working
+    bra decremente
+
+store_zero
+    WR_EEPROM   EEPROM_LOCH, EEPROM_LOCL, not_working
+    bra decremente
+
+
+
+
+
+;********************* INSPECTION SUBROUTINES *********************************
+;******************************************************************************
+detection
+    ; initialize variables
+    store temp1, 0x00       ;temp1 stores the number of LEDs that are working
+    movlw   0x1
+
+    ;rotate plate once, send pulse to motor
+
+    ;read from RA0(IR), if true (IR sensors can't sense anything) loop again
+    movff PORTC, PORTC_data
+    btfss PORTC_data, 0
+    goto detection
+
+    
+    ;read from RA1-3
+    movff PORTC, PORTC_data
+    btfsc PORTC_data, 1  ;test if the first light is activated, TRUE -> add 1 to temp1
+    addwf   temp1, 1
+    btfsc PORTC_data, 2  ;test if the second light is activated, TRUE -> add 1 to temp1
+    addwf   temp1, 1
+    btfsc PORTC_data, 5  ;test if the third light is activated, TRUE -> add 1 to temp1
+    addwf   temp1, 1
+
+    ;increment the corresponding register
+    movff temp1, WREG
+    btfsc STATUS, Z   ;check if temp1 is 0 (if the Z bit is set)
+    incf not_working    ;add to the not_working counter (no light is lit)
+
+    sublw 1
+    btfsc STATUS, Z   ;check if 1
+    incf one_working  ;add if true
+
+    movff temp1, WREG        ;WREG is changed, reload
+    sublw 2           ;check if 2
+    btfsc STATUS, Z
+    incf two_working  ; add if it becomes 0 (TRUE)
+
+    movff temp1, WREG        ;WREG is changed, reload
+    sublw 3           ;check if 3
+    btfsc STATUS, Z
+    incf three_working  ; add if true
+
+    ;decrement curr_light_num, if not 0, loop
+    decf curr_light_num
+    store temp2, 0x00
+    bne temp2, curr_light_num, detection
+
+
+    ;store in EEPROM
+    ;call store_EEPROM_log
+    return
+
+display_quantity
+    call  CLR_LCD
+    movlw "3"
+    call WR_DATA
+    movlw ":"
+    call WR_DATA
+    movff three_working, WREG
+    addlw 0x30
+    call WR_DATA
+
+    movlw " "
+    call WR_DATA
+    movlw "2"
+    call WR_DATA
+    movlw ":"
+    call WR_DATA
+    movff two_working, WREG
+    addlw 0x30
+    call WR_DATA
+
+    movlw " "
+    call WR_DATA
+    movlw "1"
+    call WR_DATA
+    movlw ":"
+    call WR_DATA
+    movff one_working, WREG
+    addlw 0x30
+    call WR_DATA
+
+    movlw " "
+    call WR_DATA
+    movlw "0"
+    call WR_DATA
+    movlw ":"
+    call WR_DATA
+    movff not_working, WREG
+    addlw 0x30
+    call WR_DATA
+
+    call delay2second
+    return
+
+display_time_lapsed
+    call ReadRTC
+    call CLR_LCD
+    call lapsed
+    call CalculateTimeDiff
+ 
+    movff RTC_Minute_Diff, WREG
+    call ConvertRTC
+    movff RTC_H, WREG
+    call WR_DATA
+    movff RTC_L, WREG
+    call WR_DATA
+
+
+    movlw ":"
+    call WR_DATA
+
+    movff RTC_Second_Diff, WREG
+    call ConvertRTC
+    movff RTC_H, WREG
+    call WR_DATA
+    movff RTC_L, WREG
+    call WR_DATA
+
+    call delay2second
+    return
+
+
+
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;Main function;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 boot
 ;*initialize everything
         call CLR_PORTS                ;clear the ports
 		call INIT_LCD                 ;initialize LCD
-        store   EEPROM_LOCH, 0x01     ;specify EEPROM location
+        store   EEPROM_LOCH, 0x02     ;specify EEPROM location
         store   EEPROM_LOCL, 0x00
-        store curr_light_num, 9       ;light counter, decrements after each inspection
-        store not_working, 0           
-        store one_working, 0           
-        store two_working, 0            
-        store three_working, 0
         call InitializeI2C
         ;call SetRTC
 
 
 welcome
-		  call Home                     ;display Home
-          goto menu                     ;poll keys and display menu accordingly
+		call Home                     ;display Home
+        call delay1second
+        store curr_light_num, 9       ;light counter, decrements after each inspection
+        store not_working, 0
+        store one_working, 0
+        store two_working, 0
+        store three_working, 0
+        goto menu                     ;poll keys and display menu accordingly
 
 menu
 ; shows menu if any key is pressed
-         movff  PORTB, PORTB_data   ;store at another variable
+         call CLR_LCD
+         call DisplayRTC_BottomLeft
 
          main_menu_loop
-             call CLR_LCD
-             call DisplayRTC_BottomLeft
              movff  PORTB, PORTB_data   ;store at another variable
              btfsc  PORTB_data, 1       ;test if key is pressed
                  bra pressed                ;skip if PORTB 2 is clear (none pressed)
@@ -396,7 +588,7 @@ menu
                 call CLR_LCD
                 call main_menu
                 call delay1second
-                bra menu_selection
+                goto menu_selection
           
 menu_selection
 ; user decides whether LOG or OPERATION
@@ -406,67 +598,62 @@ menu_selection
         ;test A and 3, if nothing then loop to itself
 
         ;test 3
-        movlw b'00100010'   ;move B into W
-        xorwf PORTB_data, 0 ;XOR PORTB with B, store in W
-        ;if W becomes 0, then B is pressed, else B not pressed
-        bnz test_A         ;will branch if anything else than B pressed
-        bra operation_selected
-
-
+        store temp1, b'00100010'
+        beq     PORTB_data, temp1, operation_selected
 
         ;else, test if A is pressed
-        test_A
-            movlw b'00110010'           ;move A's complement into W
-            xorwf PORTB_data, 0         ;XOR PORTB with A, becomes 0 if pressed
-            bnz none_pressed_menu_select
-            bra log_selected
+        store temp1, b'00110010'
+        beq     PORTB_data, temp1, log_selected
 
-        none_pressed_menu_select
-            bra menu_selection    ;loop back to itself if no valid input
+        bra menu_selection    ;loop back to itself if no valid input
         
             
 operation_selected
 ; what to do if operation selected
 
         ; capture start time here
-         call operation     ;display operation
+        call CLR_LCD
+        call ReadRTC
+        movff   RTC_Second, RTC_Second_Old
+        movff   RTC_Minute, RTC_Minute_Old
+        movff   RTC_Hour, RTC_Hour_Old
+
+        call operation     ;display operation
 
          ; do stuff here
+        call detection
+        
+        call display_quantity
 
+        call display_time_lapsed
 
+        call finito        ;display finish message after operation
 
-         call finito        ;display finish message after operation
          ;capture end time, find differences and display it
+        
          ;delay for 2 seconds
-         goto    welcome     ;goes back to home
+
+        goto    welcome     ;goes back to home
 
 log_selected
 ; what to do if log selected
         call log_menu       ;display log menu
-        bra probe_log_menu_selection
+        goto probe_log_menu_selection
 
 probe_log_menu_selection
 ; test what input is selected in LOG menu
+; test A and 3, if nothing then loop to itself
         movff PORTB, PORTB_data     ;store data from PORTB
 
-        ;test A and 3, if nothing then loop to itself
-
         ;test 3
-        movlw b'00100010'   ;move B into W
-        xorwf PORTB_data, 0 ;XOR PORTB with B, store in W
-        ;if W becomes 0, then B is pressed, else B not pressed
-        bnz test_A_log_select         ;will branch if anything else than B pressed
-        bra upload_selected
+        store temp1, b'00100010'
+        beq     PORTB_data, temp1, upload_selected
 
-        ;else, test if A is pressed (user chooses "view log")
-        test_A_log_select
-            movlw b'00110010'           ;move A into W
-            xorwf PORTB_data, 0         ;XOR PORTB with A, becomes 0 if pressed
-            bnz none_pressed_log_select
-            bra viewlog_selected
+        ;test A
+        store temp1, b'00110010'
+        beq     PORTB_data, temp1, viewlog_selected
 
-        none_pressed_log_select
-            bra probe_log_menu_selection    ;loop back to itself if no valid input
+        bra probe_log_menu_selection    ;loop back to itself if no valid input
 
 ;************** user chooses to upload ********************************
 upload_selected
@@ -483,26 +670,16 @@ viewlog_selected
 log_secondary_menu_selected
         movff PORTB, PORTB_data     ;store data from PORTB
 
-        test_3
-            movlw b'00100010'           ;move 3 into W
-            xorwf PORTB_data, 0         ;XOR PORTB with 3, becomes 0 if pressed
-            bnz test_2                  ;branches if not 0 (not 3)
-            bra log_3_selected          ;else display task 3 info
+        store temp1, b'00100010'
+        beq     PORTB_data, temp1, log_3_selected
 
-        test_2
-            movlw b'00010010'           ;move 2 into W
-            xorwf PORTB_data, 0         ;XOR PORTB with A, becomes 0 if pressed
-            bnz test_1
-            bra log_2_selected
+        store temp1, b'00010010'
+        beq     PORTB_data, temp1, log_2_selected
 
-        test_1
-            movlw b'00000010'           ;move 1 into W
-            xorwf PORTB_data, 0         ;XOR PORTB with A, becomes 0 if pressed
-            bnz viewlog_no_valid_input
-            bra log_1_selected
+        store temp1, b'00000010'
+        beq     PORTB_data, temp1, log_1_selected
 
-        viewlog_no_valid_input
-            bra log_secondary_menu_selected    ;loop back to itself if no valid input
+        bra log_secondary_menu_selected    ;loop back to itself if no valid input
 
 log_3_selected
         call    show_log
@@ -519,59 +696,10 @@ home_select_probe
 
         ;test A, if nothing then loop to itself
 
-        ;test A
-        movlw b'00110010'   ;move A into W
-        xorwf PORTB_data, 0 ;XOR PORTB with A, store in W
-        bnz home_select_probe         ;will loop if anything else than A pressed
-        goto menu
+        store temp1, b'00110010'
+        beq     PORTB_data, temp1, menu
+        bra home_select_probe
+
     end;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-
-;********************* INSPECTION SUBROUTINES *********************************
-detection
-    ; initialize variables
-    store temp1, 0x00       ;temp1 stores the number of LEDs that are working
-    movlw   0x1
-
-    ;rotate plate once, send pulse to motor
-
-    ;read from RA0(IR), if true (IR sensors can't sense anything) loop again
-    btfsc PORTA, 0
-    bra detection
-
-    ;read from RA1-3
-    btfss PORTA, 1  ;test if the first light is activated, TRUE -> add 1 to temp1
-    addwf   temp1, 1
-    btfss PORTA, 2  ;test if the second light is activated, TRUE -> add 1 to temp1
-    addwf   temp1, 1
-    btfss PORTA, 3  ;test if the third light is activated, TRUE -> add 1 to temp1
-    addwf   temp1, 1
-
-    ;increment the corresponding register
-    movf temp1
-    btfsc STATUS, Z   ;check if temp1 is 0 (if the Z bit is set)
-    incf not_working    ;add to the not_working counter (no light is lit)
-
-    sublw 1
-    btfsc STATUS, Z   ;check if 1
-    incf one_working  ;add if true
-
-    movf temp1        ;WREG is changed, reload
-    sublw 2           ;check if 2
-    btfsc STATUS, Z
-    incf two_working  ; add if it becomes 0 (TRUE)
-
-    movf temp1        ;WREG is changed, reload
-    sublw 3           ;check if 2
-    btfsc STATUS, Z
-    incf three_working  ; add if true
-
-    ;decrement curr_light_num, if not 0, loop
-    decf curr_light_num
-    btfss STATUS, Z
-    bra  detection
-
-    ;store in EEPROM
-    
-    return

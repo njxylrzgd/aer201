@@ -31,12 +31,12 @@ display     macro   table_name
 
             global Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD
             global log_menu, main_menu, operation, upload_msg, viewlog_msg, show_log
-            global operation, finito
+            global operation, finito, lapsed
 ;;;;;;;;;;;;;;Menu options;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Home
           call CLR_LCD   
           display Welcome_message       ;display welcome msg, wait for 2 sec
-          call delay2second
+          call delay1second
           call CLR_LCD                  ;clear LCD and write Home message
           display Press_any_key
           return
@@ -84,25 +84,28 @@ finito
         call delay2second
         return 
 
+lapsed
+        display Time_lapsed
+        return
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;LCD commands;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 CLR_PORTS
-        store   TRISA,  B'00001111'     ;clear ports
+        store   TRISA,  B'00000000'     ;clear ports
         store   TRISB,  b'11110010'    ; Set required keypad inputs
-		store	TRISC,  B'00011000'
+		store	TRISC,  B'00111111'
 	    store   TRISD, 0x0
-
-        clrf      LATA
-        clrf      LATB
-        clrf      LATC
-        clrf      LATD
+;
+;        clrf      LATA
+;        clrf      LATB
+;        clrf      LATC
+;        clrf      LATD
 
         clrf      PORTA
         clrf      PORTB
         clrf      PORTC
         clrf      PORTD
 
-        store   ADCON1, B'00001011'     ; set AD converter
+        ;store   ADCON1, B'00001011'     ; set AD converter
         return
 
 INIT_LCD
@@ -238,6 +241,7 @@ Log_menu                db  "A-VIEW 3-UPLOAD", 0
 Upload_message          db  "uploading..."
 Log_secondary_menu      db  "Select: 1,2,3", 0
 Viewlog_menu               db  "0:_ 1:_ 2:_ 3:_", 0
+Time_lapsed             db  "Lapsed: ", 0
 
 end;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
