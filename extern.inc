@@ -1,6 +1,6 @@
     extern Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD
     extern log_menu, main_menu, operation, upload_msg, viewlog_msg, show_log
-    extern operation, finito, lapsed
+    extern operation, finito, lapsed, test, ISR_message
     ;extern INIT_I2C, SET_RTC_VAL, INIT_READ, read_RTC_Nack, read_RTC_ack
 
 TRUE    equ     B'1'

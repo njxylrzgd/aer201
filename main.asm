@@ -26,7 +26,10 @@ RTC_Year              equ     0x4D
 RTC_Date              equ     0x4E
 RTC_Day              equ     0x4F
 RTC_Hour              equ     0x50
-RTC_Hour_Old          equ       0x59    ;999999999
+RTC_Hour_Old          equ       0x59
+W_TEMP                  equ     0x5A
+STATUS_TEMP             equ     0x5B
+BSR_TEMP                equ     0x5C;999999999
 RTC_Second_Diff       equ       0x51
 RTC_Second_Old       equ       0x52
 RTC_Minute_Diff       equ       0x53
@@ -59,7 +62,8 @@ RTC_Month              equ     0x57
 			org		0x0000
 			goto	boot
 			org		0x08				;high priority ISR
-			retfie
+            goto    high_ISR
+			
 			org		0x18				;low priority ISR
 			retfie
 
@@ -427,19 +431,33 @@ store_zero
 ;******************************************************************************
 detection
     ; initialize variables
+
+    store temp2, 0x00
     store temp1, 0x00       ;temp1 stores the number of LEDs that are working
-    movlw   0x1
+    
 
     ;rotate plate once, send pulse to motor
+;    bsf TRISA, 6  ; makes the RA6 an output
+;    call delay1second        ; output for about 1 second
+;    bcf TRISA, 6  ; stop outputting signal
+
+    call test
+    call delay1second
+    call delay1second
+
+    beq temp2, curr_light_num, ret
+
+    decf curr_light_num
 
     ;read from RA0(IR), if true (IR sensors can't sense anything) loop again
     movff PORTC, PORTC_data
-    btfss PORTC_data, 0
+    btfsc PORTC_data, 0
     goto detection
 
-    
+
     ;read from RA1-3
     movff PORTC, PORTC_data
+    movlw   0x1
     btfsc PORTC_data, 1  ;test if the first light is activated, TRUE -> add 1 to temp1
     addwf   temp1, 1
     btfsc PORTC_data, 2  ;test if the second light is activated, TRUE -> add 1 to temp1
@@ -467,14 +485,14 @@ detection
     incf three_working  ; add if true
 
     ;decrement curr_light_num, if not 0, loop
-    decf curr_light_num
-    store temp2, 0x00
-    bne temp2, curr_light_num, detection
-
+    
+    ;bne temp2, curr_light_num, detection
+    bra detection
 
     ;store in EEPROM
     ;call store_EEPROM_log
-    return
+ret
+return
 
 display_quantity
     call  CLR_LCD
@@ -517,6 +535,8 @@ display_quantity
     call WR_DATA
 
     call delay2second
+    call delay2second
+    call delay2second
     return
 
 display_time_lapsed
@@ -547,7 +567,24 @@ display_time_lapsed
     return
 
 
+;;;;;;;;;;;;;;;;;;;;;;******************************
+;;;****************************ISR *****************************************
+high_ISR
+    MOVWF W_TEMP ; W_TEMP is in virtual bank
+    MOVFF STATUS, STATUS_TEMP ; STATUS_TEMP located anywhere
+    MOVFF BSR, BSR_TEMP ; BSR_TMEP located anywhere
+    ;
+    ; USER ISR CODE
+    call ISR_message
+    inf_loop_isr
+        bra inf_loop_isr        ;infinite loop, do nothing once emergency is activated
+    ;
+    MOVFF BSR_TEMP, BSR ; Restore BSR
+    MOVF W_TEMP, WREG ; Restore WREG
+    MOVFF STATUS_TEMP, STATUS ; Restore STATUS
 
+
+    retfie
 
 
 
@@ -561,6 +598,15 @@ boot
         store   EEPROM_LOCL, 0x00
         call InitializeI2C
         ;call SetRTC
+
+        ;Set ISR
+        ;bsf RCON, 7         ;enable priority levels on interrupts
+        clrf INTCON
+        bsf INTCON, INT0IE    ;enables external interrupt    
+        clrf INTCON2
+        bsf INTCON2, INTEDG0 ;rising edge interrupt
+        bsf INTCON, GIE     ;enable global
+
 
 
 welcome
