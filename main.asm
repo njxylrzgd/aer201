@@ -435,23 +435,21 @@ detection
     store temp2, 0x00
     store temp1, 0x00       ;temp1 stores the number of LEDs that are working
     
-
-    ;rotate plate once, send pulse to motor
-;    bsf TRISA, 6  ; makes the RA6 an output
-;    call delay1second        ; output for about 1 second
-;    bcf TRISA, 6  ; stop outputting signal
-
     call test
     call delay1second
+
+    bcf PORTC, 7
+    bsf PORTC, 6
     call delay1second
+    bcf PORTC, 6
 
     beq temp2, curr_light_num, ret
 
     decf curr_light_num
 
     ;read from RA0(IR), if true (IR sensors can't sense anything) loop again
-    movff PORTC, PORTC_data
-    btfsc PORTC_data, 0
+    ;movff PORTC, PORTC_data
+    btfss PORTC, 0
     goto detection
 
 
@@ -491,8 +489,8 @@ detection
 
     ;store in EEPROM
     ;call store_EEPROM_log
-ret
-return
+    ret
+        return
 
 display_quantity
     call  CLR_LCD

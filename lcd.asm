@@ -104,6 +104,11 @@ ISR_message
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;LCD commands;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 CLR_PORTS
+        clrf      PORTA
+        clrf      PORTB
+        clrf      PORTC
+        clrf      PORTD
+
         store   TRISA,  B'00000000'     ;clear ports
         store   TRISB,  b'11110011'    ; Set required keypad inputs
 		store	TRISC,  B'00111111'
@@ -114,10 +119,7 @@ CLR_PORTS
 ;        clrf      LATC
 ;        clrf      LATD
 
-        clrf      PORTA
-        clrf      PORTB
-        clrf      PORTC
-        clrf      PORTD
+        
 
         ;store   ADCON1, B'00001011'     ; set AD converter
         return
