@@ -372,14 +372,14 @@ CalculateTimeDiff
 store_EEPROM_log
 ;used in the end of detection process
 ;store results in the permanent log by shifting everything down one row
-    store EEPROM_LOCH, 0x05     ;initialize counters for swaps
+    store EEPROM_LOCH, 0x00     ;initialize counters for swaps
     store EEPROM_LOCL, 0x03
 
     L_LOOP
-        store EEPROM_LOCH, 0x05     ;restore variable each loop
+        store EEPROM_LOCH, 0x00     ;restore variable each loop
 
         H_LOOP                  ;loop for higher bit addresses
-            decf EEPROM_LOCH    ;decrement address and read the previous row
+            incf EEPROM_LOCH    ;increment address and read the previous row
             RD_EEPROM  EEPROM_LOCL, EEPROM_LOCH, temp1
             incf EEPROM_LOCH    ;increment and write to the current row
             WR_EEPROM  EEPROM_LOCL, EEPROM_LOCH, temp1
@@ -574,6 +574,10 @@ high_ISR
     ;
     ; USER ISR CODE
     call ISR_message
+
+    bcf PORTC, 6    ;clear motor signal
+    bcf PORTC, 7    ;clear motor signal
+    bsf PORTD, 0    ;make RD0 1
     inf_loop_isr
         bra inf_loop_isr        ;infinite loop, do nothing once emergency is activated
     ;

@@ -112,7 +112,7 @@ CLR_PORTS
         store   TRISA,  B'00000000'     ;clear ports
         store   TRISB,  b'11110011'    ; Set required keypad inputs
 		store	TRISC,  B'00111111'
-	    store   TRISD, 0x0
+	    store   TRISD,  B'00000000'    ; all output
 ;
 ;        clrf      LATA
 ;        clrf      LATB
