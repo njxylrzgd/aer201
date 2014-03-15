@@ -3,12 +3,12 @@
 #define   RS        PORTD,2        ; for v 1.0 used PORTD.2
 #define   E         PORTD,3        ; for v 1.0 used PORTD.3
 
-temp_lcd  EQU       0x20           ; buffer for Instruction
-dat       EQU       0x21           ; buffer for data
-delay1	  EQU		0x25
-delay2	  EQU		0x26
-delay3	  EQU		0x27
-delay4    equ       0x28
+temp_lcd  EQU       0x30           ; buffer for Instruction
+dat       EQU       0x31           ; buffer for data
+delay1	  EQU		0x35
+delay2	  EQU		0x36
+delay3	  EQU		0x37
+delay4    equ       0x38
 
 store       macro   var_name,   val
             movlw   val
@@ -112,7 +112,7 @@ CLR_PORTS
         store   TRISA,  B'00000000'     ;clear ports
         store   TRISB,  b'11110011'    ; Set required keypad inputs
 		store	TRISC,  B'00111111'
-	    store   TRISD,  B'00000000'    ; all output
+	    store   TRISD,  B'00000001'    ; all output except RD0(IR)
 ;
 ;        clrf      LATA
 ;        clrf      LATB
@@ -239,6 +239,15 @@ delay1second
             call delay5ms
             bnz     d2sloop
         return
+
+delayquartersecond
+    movlw   D'20'
+    movwf   delay3, 0
+    d1sloop
+        decf    delay3, 1
+        call delay5ms
+        bnz     d2sloop
+    return
 
 Again
               call      WR_DATA

@@ -33,7 +33,7 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>PICkit2PlatformTool</platformTool>
         <languageToolchain>MPASMWIN</languageToolchain>
-        <languageToolchainVersion>5.55</languageToolchainVersion>
+        <languageToolchainVersion>5.54</languageToolchainVersion>
         <platform>3</platform>
       </toolsSet>
       <compileType>

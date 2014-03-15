@@ -29,7 +29,10 @@ RTC_Hour              equ     0x50
 RTC_Hour_Old          equ       0x59
 W_TEMP                  equ     0x5A
 STATUS_TEMP             equ     0x5B
-BSR_TEMP                equ     0x5C;999999999
+BSR_TEMP                equ     0x5C
+BACK_FLAG               equ     0x5D
+TOTAL_LIGHT             equ     0x5E
+END_FLAG                equ     0x5F ;999999999
 RTC_Second_Diff       equ       0x51
 RTC_Second_Old       equ       0x52
 RTC_Minute_Diff       equ       0x53
@@ -63,10 +66,8 @@ RTC_Month              equ     0x57
 			goto	boot
 			org		0x08				;high priority ISR
             goto    high_ISR
-			
-			org		0x18				;low priority ISR
-			retfie
-
+			org		0018h				;low priority ISR
+            retfie      ;goto    IR_ISR
 
 ;*********************************
 ; RTC Routines
@@ -429,69 +430,6 @@ store_zero
 
 ;********************* INSPECTION SUBROUTINES *********************************
 ;******************************************************************************
-detection
-    ; initialize variables
-
-    store temp2, 0x00
-    store temp1, 0x00       ;temp1 stores the number of LEDs that are working
-    
-    call test
-    call delay1second
-
-    bcf PORTC, 7
-    bsf PORTC, 6
-    call delay1second
-    bcf PORTC, 6
-
-    beq temp2, curr_light_num, ret
-
-    decf curr_light_num
-
-    ;read from RA0(IR), if true (IR sensors can't sense anything) loop again
-    ;movff PORTC, PORTC_data
-    btfss PORTC, 0
-    goto detection
-
-
-    ;read from RA1-3
-    movff PORTC, PORTC_data
-    movlw   0x1
-    btfsc PORTC_data, 1  ;test if the first light is activated, TRUE -> add 1 to temp1
-    addwf   temp1, 1
-    btfsc PORTC_data, 2  ;test if the second light is activated, TRUE -> add 1 to temp1
-    addwf   temp1, 1
-    btfsc PORTC_data, 5  ;test if the third light is activated, TRUE -> add 1 to temp1
-    addwf   temp1, 1
-
-    ;increment the corresponding register
-    movff temp1, WREG
-    btfsc STATUS, Z   ;check if temp1 is 0 (if the Z bit is set)
-    incf not_working    ;add to the not_working counter (no light is lit)
-
-    sublw 1
-    btfsc STATUS, Z   ;check if 1
-    incf one_working  ;add if true
-
-    movff temp1, WREG        ;WREG is changed, reload
-    sublw 2           ;check if 2
-    btfsc STATUS, Z
-    incf two_working  ; add if it becomes 0 (TRUE)
-
-    movff temp1, WREG        ;WREG is changed, reload
-    sublw 3           ;check if 3
-    btfsc STATUS, Z
-    incf three_working  ; add if true
-
-    ;decrement curr_light_num, if not 0, loop
-    
-    ;bne temp2, curr_light_num, detection
-    bra detection
-
-    ;store in EEPROM
-    ;call store_EEPROM_log
-    ret
-        return
-
 display_quantity
     call  CLR_LCD
     movlw "3"
@@ -584,11 +522,94 @@ high_ISR
     MOVFF BSR_TEMP, BSR ; Restore BSR
     MOVF W_TEMP, WREG ; Restore WREG
     MOVFF STATUS_TEMP, STATUS ; Restore STATUS
-
-
     retfie
 
+IR_ISR
+    bcf PORTC, 6            ;turn off motor first
+    bcf PORTC, 7
+    call delay1second
+    btfss PORTC, 0 ;check if microswitch is pressed (Use RC0)
+    goto check_bkflag_else_sense
 
+    bsf BACK_FLAG, 0 ;set back flag
+    bsf PORTC, 6     ;reverse the direction of the motor
+    call test
+    call delay1second 
+    return
+;    bcf INTCON3, INT2IF ;clear INT2 flag
+;    retfie
+
+
+check_bkflag_else_sense
+    btfss BACK_FLAG, 0
+    goto sense_light
+
+    tstfsz TOTAL_LIGHT
+    dcfsnz TOTAL_LIGHT ;decrement counter, if not 0, skip setting END_FLAG
+    bsf END_FLAG, 0        ;set END_FLAG
+
+    bcf PORTC, 7
+    bsf PORTC, 6
+    return
+SET_END_FLAG
+
+;    bcf INTCON3, INT2IF ;clear INT2 flag
+;    retfie      ;else return
+
+sense_light
+    store temp2, 0x00
+    store temp1, 0x00       ;temp1 stores the number of LEDs that are working
+    call test
+    call delay1second
+
+
+    ;read from RA1-3
+    movff PORTC, PORTC_data
+    movlw   0x1
+    btfsc PORTC_data, 1  ;test if the first light is activated, TRUE -> add 1 to temp1
+    addwf   temp1, 1
+    btfsc PORTC_data, 2  ;test if the second light is activated, TRUE -> add 1 to temp1
+    addwf   temp1, 1
+    btfsc PORTC_data, 5  ;test if the third light is activated, TRUE -> add 1 to temp1
+    addwf   temp1, 1
+
+    ;increment the corresponding register
+    movff temp1, WREG
+    btfsc STATUS, Z   ;check if temp1 is 0 (if the Z bit is set)
+    incf not_working    ;add to the not_working counter (no light is lit)
+
+    sublw 1
+    btfsc STATUS, Z   ;check if 1
+    incf one_working  ;add if true
+
+    movff temp1, WREG        ;WREG is changed, reload
+    sublw 2           ;check if 2
+    btfsc STATUS, Z
+    incf two_working  ; add if it becomes 0 (TRUE)
+
+    movff temp1, WREG        ;WREG is changed, reload
+    sublw 3           ;check if 3
+    btfsc STATUS, Z
+    incf three_working  ; add if true
+
+    incf TOTAL_LIGHT
+    bcf PORTC, 6        ;run the motor again
+    bsf PORTC, 7
+    call delay1second   ;move this light away
+;    bcf INTCON3, INT2IF ;clear INT2 flag
+;    retfie
+    return 
+
+THE_END
+        ;turns off motor
+        bcf PORTC, 6
+        bcf PORTC, 7
+
+        call display_quantity
+        call display_time_lapsed
+        call finito        ;display finish message after operation
+
+        goto    welcome     ;goes back to home
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;Main function;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -598,17 +619,25 @@ boot
 		call INIT_LCD                 ;initialize LCD
         store   EEPROM_LOCH, 0x02     ;specify EEPROM location
         store   EEPROM_LOCL, 0x00
+        store   BACK_FLAG, 0x0
+        store   END_FLAG, 0x0
+        store   TOTAL_LIGHT, 0x0 
         call InitializeI2C
         ;call SetRTC
 
         ;Set ISR
         ;bsf RCON, 7         ;enable priority levels on interrupts
+        bsf RCON, IPEN ;enables levels of interrupt
         clrf INTCON
         bsf INTCON, INT0IE    ;enables external interrupt    
         clrf INTCON2
         bsf INTCON2, INTEDG0 ;rising edge interrupt
-        bsf INTCON, GIE     ;enable global
-
+        ;bsf INTCON2, INTEDG2 ;rising edge interrupt RB2
+        ;clrf INTCON3
+        ;bcf INTCON3, INT2IP  ;INT2 low priority
+        ;bsf INTCON3, INT2IE  ;enables INT2/RB2 as an interrupt
+        bsf INTCON, GIEH     ;enable global
+        ;bsf INTCON, GIEL
 
 
 welcome
@@ -668,20 +697,15 @@ operation_selected
 
         call operation     ;display operation
 
-         ; do stuff here
-        call detection
-        
-        call display_quantity
-
-        call display_time_lapsed
-
-        call finito        ;display finish message after operation
-
-         ;capture end time, find differences and display it
-        
-         ;delay for 2 seconds
-
-        goto    welcome     ;goes back to home
+        ;run motor, loop
+        bcf PORTC, 6
+        bsf PORTC, 7
+        op_loop
+            btfsc PORTD, 0; test if IR senses anything (0->nothing)
+            call IR_ISR
+            btfss END_FLAG, 0 ;if END_FLAG is set, don't loop, go to the END
+            bra op_loop
+        goto THE_END
 
 log_selected
 ; what to do if log selected
