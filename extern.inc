@@ -1,6 +1,7 @@
-    extern Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD
+    extern Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD, delayquartersecond
     extern log_menu, main_menu, operation, upload_msg, viewlog_msg, show_log
     extern operation, finito, lapsed, test, ISR_message
+    extern delay5ms
     ;extern INIT_I2C, SET_RTC_VAL, INIT_READ, read_RTC_Nack, read_RTC_ack
 
 TRUE    equ     B'1'
@@ -45,7 +46,7 @@ RD_EEPROM_LIT macro   addL, addH, eeprom_target
     movff   EEDATA, eeprom_target       ;move data into target
     endm
 
-WR_EEPROM_LIT   macro   addH,   addL,  eeprom_data
+WR_EEPROM_LIT   macro   addL,   addH,  eeprom_data
 ;   params all literals
 ;   write to a EEPROM location
     movlw   addL        ;load address into EEADR registers
@@ -86,7 +87,7 @@ RD_EEPROM macro   addL, addH, eeprom_target
     movff   EEDATA, eeprom_target       ;move data into target
     endm
 
-WR_EEPROM   macro   addH,   addL,  eeprom_data
+WR_EEPROM   macro   addL,   addH,  eeprom_data
 ;   params all literals
 ;   write to a EEPROM location
     movff   addL, WREG        ;load address into EEADR registers

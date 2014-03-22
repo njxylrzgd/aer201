@@ -29,9 +29,10 @@ display     macro   table_name
 
             code
 
-            global Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD
+            global Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD, delayquartersecond
             global log_menu, main_menu, operation, upload_msg, viewlog_msg, show_log
             global operation, finito, lapsed, test, ISR_message
+            global delay5ms
 ;;;;;;;;;;;;;;Menu options;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Home
           call CLR_LCD   
@@ -104,11 +105,6 @@ ISR_message
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;LCD commands;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 CLR_PORTS
-        clrf      PORTA
-        clrf      PORTB
-        clrf      PORTC
-        clrf      PORTD
-
         store   TRISA,  B'00000000'     ;clear ports
         store   TRISB,  b'11110011'    ; Set required keypad inputs
 		store	TRISC,  B'00111111'
@@ -118,7 +114,10 @@ CLR_PORTS
 ;        clrf      LATB
 ;        clrf      LATC
 ;        clrf      LATD
-
+        clrf      PORTA
+        clrf      PORTB
+        clrf      PORTC
+        clrf      PORTD
         
 
         ;store   ADCON1, B'00001011'     ; set AD converter
@@ -237,16 +236,16 @@ delay1second
         d1sloop
             decf    delay3, 1
             call delay5ms
-            bnz     d2sloop
+            bnz     d1sloop
         return
 
 delayquartersecond
     movlw   D'20'
     movwf   delay3, 0
-    d1sloop
+    dqsloop
         decf    delay3, 1
         call delay5ms
-        bnz     d2sloop
+        bnz     dqsloop
     return
 
 Again

@@ -470,9 +470,12 @@ display_quantity
     addlw 0x30
     call WR_DATA
 
-    call delay2second
-    call delay2second
-    call delay2second
+;    call delay2second
+;    call delay2second
+;    call delay2second
+    disp_loop
+        btfss   PORTB, 1
+        bra disp_loop
     return
 
 display_time_lapsed
@@ -528,13 +531,14 @@ IR_ISR
     bcf PORTC, 6            ;turn off motor first
     bcf PORTC, 7
     call delay1second
-    btfss PORTC, 0 ;check if microswitch is pressed (Use RC0)
+    btfsc PORTC, 0 ;check if microswitch pressed(becomes 0) (Use RC0)
     goto check_bkflag_else_sense
 
     bsf BACK_FLAG, 0 ;set back flag
     bsf PORTC, 6     ;reverse the direction of the motor
     call test
-    call delay1second 
+    ;call delayquartersecond
+    call delayquartersecond
     return
 ;    bcf INTCON3, INT2IF ;clear INT2 flag
 ;    retfie
@@ -544,24 +548,29 @@ check_bkflag_else_sense
     btfss BACK_FLAG, 0
     goto sense_light
 
-    tstfsz TOTAL_LIGHT
+    tstfsz TOTAL_LIGHT  ;test if it's 0 first
     dcfsnz TOTAL_LIGHT ;decrement counter, if not 0, skip setting END_FLAG
     bsf END_FLAG, 0        ;set END_FLAG
 
     bcf PORTC, 7
     bsf PORTC, 6
+    call delay5ms
+    call delay5ms
+    call delay5ms
+    call delay5ms
+    call delay5ms
+    ;call delayquartersecond
+;    call delayquartersecond
     return
-SET_END_FLAG
-
-;    bcf INTCON3, INT2IF ;clear INT2 flag
-;    retfie      ;else return
 
 sense_light
     store temp2, 0x00
     store temp1, 0x00       ;temp1 stores the number of LEDs that are working
     call test
-    call delay1second
-
+    call delay5ms
+    call delay5ms 
+    ;call delayquartersecond
+    ;call delayquartersecond
 
     ;read from RA1-3
     movff PORTC, PORTC_data
@@ -595,7 +604,13 @@ sense_light
     incf TOTAL_LIGHT
     bcf PORTC, 6        ;run the motor again
     bsf PORTC, 7
-    call delay1second   ;move this light away
+    
+    call delay5ms
+    call delay5ms
+    call delay5ms
+    call delay5ms
+    ;call delay5ms
+;    call delayquartersecond   ;move this light away
 ;    bcf INTCON3, INT2IF ;clear INT2 flag
 ;    retfie
     return 
@@ -605,8 +620,9 @@ THE_END
         bcf PORTC, 6
         bcf PORTC, 7
 
-        call display_quantity
         call display_time_lapsed
+        call display_quantity
+        ;call display_time_lapsed
         call finito        ;display finish message after operation
 
         goto    welcome     ;goes back to home
@@ -700,6 +716,14 @@ operation_selected
         ;run motor, loop
         bcf PORTC, 6
         bsf PORTC, 7
+
+        call delay5ms
+        call delay5ms
+        call delay5ms
+        call delay5ms
+        ;call delay5ms
+        ;call delay5ms
+        ;call delayquartersecond
         op_loop
             btfsc PORTD, 0; test if IR senses anything (0->nothing)
             call IR_ISR
@@ -715,7 +739,7 @@ log_selected
 probe_log_menu_selection
 ; test what input is selected in LOG menu
 ; test A and 3, if nothing then loop to itself
-        movff PORTB, PORTB_data     ;store data from PORTB
+        movff PORTB , PORTB_data     ;store data from PORTB
 
         ;test 3
         store temp1, b'00100010'
