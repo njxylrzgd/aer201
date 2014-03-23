@@ -543,26 +543,22 @@ high_ISR
     retfie
 
 sense_light
-    bcf PORTC, 6
-    bcf PORTC, 7
-    call delayquartersecond
-
+    call test
     store temp2, 0x00
     store temp1, 0x00       ;temp1 stores the number of LEDs that are working
-    ;call test
-    call delay5ms
-    call delay5ms 
 
     ;read from RA1-3
-    movff PORTC, PORTC_data
-    movlw   0x1
-    btfsc PORTC_data, 1  ;test if the first light is activated, TRUE -> add 1 to temp1
-    addwf   temp1, 1
-    btfsc PORTC_data, 2  ;test if the second light is activated, TRUE -> add 1 to temp1
-    addwf   temp1, 1
-    btfsc PORTC_data, 5  ;test if the third light is activated, TRUE -> add 1 to temp1
-    addwf   temp1, 1
-
+    ;movff PORTC, PORTC_data
+    ;movlw   0x1
+    btfsc PORTC, 1  ;test if the first light is activated, TRUE -> add 1 to temp1
+    ;addwf   temp1, 1
+    incf    temp1
+    btfsc PORTC, 2  ;test if the second light is activated, TRUE -> add 1 to temp1
+    ;addwf   temp1, 1
+    incf    temp1
+    btfsc PORTC, 5  ;test if the third light is activated, TRUE -> add 1 to temp1
+    ;addwf   temp1, 1
+    incf    temp1
     ;increment the corresponding register
     movff temp1, WREG
     btfsc STATUS, Z   ;check if temp1 is 0 (if the Z bit is set)
@@ -581,26 +577,33 @@ sense_light
     sublw 3           ;check if 3
     btfsc STATUS, Z
     incf three_working  ; add if true
-
-    ;incf TOTAL_LIGHT
-    bcf PORTC, 6        ;run the motor again
-    bsf PORTC, 7
-    
-    call delay5ms
-    call delay5ms
-    call delay5ms
-    call delay5ms
+;
+;    call delayquartersecond
+;    call delay5ms
+    sense_loop
+        btfsc PORTC, 0  ;goto the end if barrier marker detected
+        return
+        btfsc PORTD, 0  ;break out of the loop when nothing is blocking it
+        bra sense_loop
     return 
 
 IR_back
     bcf PORTC, 6
     bcf PORTC, 7
+    call delay5ms
+    call delay5ms
     call delayquartersecond
     bsf PORTC, 6
     call delay2second
     back_loop
+;        bcf PORTC, 6
+;        bcf PORTC, 7
+;        call delay44us
+;        bsf PORTC, 6
+;        call delay44us
+
         btfss PORTC, 0  ;test if IR2 senses anything on the way back
-        bra back_loop
+        goto back_loop
     goto THE_END
 
 THE_END
@@ -720,9 +723,9 @@ operation_selected
         bcf PORTC, 6
         bsf PORTC, 7
 
-        ;call delay5ms
-        ;call delay5ms
-        ;call delay5ms
+        call delay5ms
+        call delay5ms
+        call delay5ms
         ;call delay5ms
         ;call delay5ms
         ;call delay5ms
@@ -731,6 +734,7 @@ operation_selected
             btfsc PORTC, 0; test if IR2 senses anything
             goto IR_back
 
+            call delay44us
             bcf PORTC, 6
             bcf PORTC, 7
             call delay44us
@@ -740,7 +744,7 @@ operation_selected
             btfsc PORTD, 0; test if IR senses anything (0->nothing)
             call sense_light
 
-            call delay44us
+            
             bra op_loop
         ;goto THE_END
 
