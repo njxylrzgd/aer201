@@ -30,9 +30,10 @@ display     macro   table_name
             code
 
             global Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD, delayquartersecond
-            global log_menu, main_menu, operation, upload_msg, viewlog_msg, show_log
+            global log_menu, main_menu, operation, upload_msg, viewlog_msg
             global operation, finito, lapsed, test, ISR_message
             global delay5ms
+            global zero_message, one_message, two_message, three_message
 ;;;;;;;;;;;;;;Menu options;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Home
           call CLR_LCD   
@@ -70,12 +71,30 @@ viewlog_msg
         display Log_secondary_menu
         call delay1second
         return 
+;
+;show_log
+;        call CLR_LCD
+;        display Viewlog_menu
+;        call delay2second
+;        return
 
-show_log
-        call CLR_LCD
-        display Viewlog_menu
-        call delay2second
-        return
+
+zero_message
+    display null_message
+    return
+
+one_message
+    display eins_message
+    return
+
+two_message
+    display zwei_message
+    return
+
+three_message
+    display drei_message
+    return
+
 
 ;**********operation related menu
 operation
@@ -263,8 +282,11 @@ Finished                db  "Task completed", 0
 Abort                   db  "Aborted", 0
 Log_menu                db  "A-VIEW 3-UPLOAD", 0
 Upload_message          db  "uploading..."
-Log_secondary_menu      db  "Select: 1,2,3", 0
-Viewlog_menu               db  "0:_ 1:_ 2:_ 3:_", 0
+Log_secondary_menu      db  "Task: 1,2,3,4", 0
+null_message            db  "0:", 0
+eins_message            db  " 1:", 0
+zwei_message            db  " 2:", 0
+drei_message            db  " 3:", 0
 Time_lapsed             db  "Lapsed: ", 0
 input_now               db  "input now, 4s", 0
 

@@ -374,24 +374,31 @@ store_EEPROM_log
 ;used in the end of detection process
 ;store results in the permanent log by shifting everything down one row
     store EEPROM_LOCH, 0x00     ;initialize counters for swaps
-    store EEPROM_LOCL, 0x03
+    store EEPROM_LOCL, 0x33
 
-    L_LOOP
-        store EEPROM_LOCH, 0x00     ;restore variable each loop
+    lower_byte_loop
+        movlw 0x30      ;OR the address with 0x30
+        iorwf EEPROM_LOCL, 1    ;store result back in Address
 
-        H_LOOP                  ;loop for higher bit addresses
-            incf EEPROM_LOCH    ;increment address and read the previous row
-            RD_EEPROM  EEPROM_LOCL, EEPROM_LOCH, temp1
-            incf EEPROM_LOCH    ;increment and write to the current row
-            WR_EEPROM  EEPROM_LOCL, EEPROM_LOCH, temp1
+        higher_byte_loop                  ;loop for higher bit addresses
+            movlw 0x30      ;0011 0000 in binary, OR to check if 0
+            andwf EEPROM_LOCL, 0    ;store in WREG, the other byte for outer loop
 
-            decf EEPROM_LOCH    ;decrement higher bit addresses
+            tstfsz EEPROM_LOCL
+            bra end_higher_byte_loop
+            call test
+            call delayquartersecond
+            movff EEPROM_LOCL, WREG    ;read from LOCL - 0x10 Address
+            sublw 0x10
+            RD_EEPROM WREG, EEPROM_LOCH, temp1
+            WR_EEPROM EEPROM_LOCL, EEPROM_LOCH, temp1 ; store at LOCL
 
-            store temp1, 0x02
-            bne temp1, EEPROM_LOCH, H_LOOP
+            movff WREG, EEPROM_LOCL ;load the decremented address
+            bra higher_byte_loop
 
+        end_higher_byte_loop
         store temp1, 0x03
-        beq temp1, EEPROM_LOCL, store_three
+        beq temp1, EEPROM_LOCL, store_three     ;store data at the respective locations
 
         store temp1, 0x02
         beq temp1, EEPROM_LOCL, store_two
@@ -402,29 +409,37 @@ store_EEPROM_log
         store temp1, 0x00
         beq temp1, EEPROM_LOCL, store_zero
 
-        decremente
-            store temp1, 0x01
-            decf EEPROM_LOCL
-            bne temp1, EEPROM_LOCL, L_LOOP
-    return
+        return
 
 store_three
-    WR_EEPROM   EEPROM_LOCH, EEPROM_LOCL, three_working
-    bra decremente
+    WR_EEPROM   EEPROM_LOCL, EEPROM_LOCH, three_working
+    decf EEPROM_LOCL
+    bra lower_byte_loop
 
 store_two
-    WR_EEPROM   EEPROM_LOCH, EEPROM_LOCL, two_working
-    bra decremente
+    WR_EEPROM   EEPROM_LOCL, EEPROM_LOCH, two_working
+    decf EEPROM_LOCL
+    bra lower_byte_loop
 
 store_one
-    WR_EEPROM   EEPROM_LOCH, EEPROM_LOCL, one_working
-    bra decremente
+    WR_EEPROM   EEPROM_LOCL, EEPROM_LOCH, one_working
+    decf EEPROM_LOCL
+    bra lower_byte_loop
 
 store_zero
-    WR_EEPROM   EEPROM_LOCH, EEPROM_LOCL, not_working
-    bra decremente
-
-
+    WR_EEPROM   EEPROM_LOCL, EEPROM_LOCH, not_working
+    return
+;
+;test_EEPROM
+;    movlw 0x04
+;    movff WREG, temp1
+;    movlw 0x00
+;    movff WREG, EEPROM_LOCL
+;    movlw 0x00
+;    movff WREG, EEPROM_LOCH
+;
+;    WR_EEPROM EEPROM_LOCL, EEPROM_LOCH, temp1
+;    return
 
 
 
@@ -534,15 +549,13 @@ IR_ISR
     btfsc PORTC, 0 ;check if microswitch pressed(becomes 0) (Use RC0)
     goto check_bkflag_else_sense
 
+    call store_EEPROM_log
     bsf BACK_FLAG, 0 ;set back flag
     bsf PORTC, 6     ;reverse the direction of the motor
-    call test
+    ;call test
     ;call delayquartersecond
     call delayquartersecond
     return
-;    bcf INTCON3, INT2IF ;clear INT2 flag
-;    retfie
-
 
 check_bkflag_else_sense
     btfss BACK_FLAG, 0
@@ -566,7 +579,7 @@ check_bkflag_else_sense
 sense_light
     store temp2, 0x00
     store temp1, 0x00       ;temp1 stores the number of LEDs that are working
-    call test
+    ;call test
     call delay5ms
     call delay5ms 
     ;call delayquartersecond
@@ -633,14 +646,14 @@ boot
 ;*initialize everything
         call CLR_PORTS                ;clear the ports
 		call INIT_LCD                 ;initialize LCD
-        store   EEPROM_LOCH, 0x02     ;specify EEPROM location
-        store   EEPROM_LOCL, 0x00
+;        store   EEPROM_LOCH, 0x02     ;specify EEPROM location
+;        store   EEPROM_LOCL, 0x00
         store   BACK_FLAG, 0x0
         store   END_FLAG, 0x0
         store   TOTAL_LIGHT, 0x0 
         call InitializeI2C
         ;call SetRTC
-
+        ;call test_EEPROM
         ;Set ISR
         ;bsf RCON, 7         ;enable priority levels on interrupts
         bsf RCON, IPEN ;enables levels of interrupt
@@ -680,7 +693,7 @@ menu
          pressed
                 call CLR_LCD
                 call main_menu
-                call delay1second
+                call delayquartersecond
                 goto menu_selection
           
 menu_selection
@@ -698,9 +711,24 @@ menu_selection
         store temp1, b'00110010'
         beq     PORTB_data, temp1, log_selected
 
+        store temp1, b'11000010'
+        beq     PORTB_data, temp1, debugger_mode
         bra menu_selection    ;loop back to itself if no valid input
         
-            
+
+debugger_mode
+    store temp1, b'10000010'
+    beq PORTB, temp1, turn_left
+
+    bra debugger_mode
+    turn_left
+        store temp1, b'10000010'
+        bcf PORTC, 7
+        bsf PORTC, 6
+        beq PORTB, temp1, turn_left
+        bcf PORTC, 6
+        goto welcome
+
 operation_selected
 ; what to do if operation selected
 
@@ -775,16 +803,109 @@ log_secondary_menu_selected
         store temp1, b'00000010'
         beq     PORTB_data, temp1, log_1_selected
 
+        store temp1, b'01000010'
+        beq     PORTB_data, temp1, log_4_selected
+
         bra log_secondary_menu_selected    ;loop back to itself if no valid input
 
 log_3_selected
-        call    show_log
-        bra     home_select_probe
+        call    CLR_LCD
+
+        RD_EEPROM_LIT   0x00, 0x20, WREG    ;load data to WREG
+        call zero_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x21, WREG    ;load data to WREG
+        call one_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x22, WREG    ;load data to WREG
+        call two_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x23, WREG    ;load data to WREG
+        call three_message
+        addlw 0x30
+        call WR_DATA                ;write EEPROM data to LCD
+
+        goto     home_select_probe
+
 log_2_selected
-        call    show_log
-        bra     home_select_probe
+        call    CLR_LCD
+
+        RD_EEPROM_LIT   0x00, 0x10, WREG    ;load data to WREG
+        call zero_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x11, WREG    ;load data to WREG
+        call one_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x12, WREG    ;load data to WREG
+        call two_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x13, WREG    ;load data to WREG
+        call three_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        goto     home_select_probe
+
 log_1_selected
-        call    show_log
+        call    CLR_LCD
+
+        RD_EEPROM_LIT   0x00, 0x00, WREG    ;load data to WREG
+        call zero_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x01, WREG    ;load data to WREG
+        call one_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x02, WREG    ;load data to WREG
+        call two_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x03, WREG    ;load data to WREG
+        call three_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        goto     home_select_probe
+
+log_4_selected
+        call    CLR_LCD
+
+        RD_EEPROM_LIT   0x00, 0x30, WREG    ;load data to WREG
+        call zero_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x31, WREG    ;load data to WREG
+        call one_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x32, WREG    ;load data to WREG
+        call two_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
+        RD_EEPROM_LIT   0x00, 0x33, WREG    ;load data to WREG
+        call three_message
+        addlw 0x30
+        call WR_DATA                ;write to LCD
+
         bra     home_select_probe
 
 home_select_probe
