@@ -1,7 +1,7 @@
     extern Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD, delayquartersecond
     extern log_menu, main_menu, operation, upload_msg, viewlog_msg
     extern operation, finito, lapsed, test, ISR_message
-    extern delay5ms
+    extern delay5ms, delay44us
     extern zero_message, one_message, two_message, three_message
     ;extern INIT_I2C, SET_RTC_VAL, INIT_READ, read_RTC_Nack, read_RTC_ack
 

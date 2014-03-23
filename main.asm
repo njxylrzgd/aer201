@@ -542,48 +542,16 @@ high_ISR
     MOVFF STATUS_TEMP, STATUS ; Restore STATUS
     retfie
 
-IR_ISR
-    bcf PORTC, 6            ;turn off motor first
-    bcf PORTC, 7
-    call delay1second
-    btfsc PORTC, 0 ;check if microswitch pressed(becomes 0) (Use RC0)
-    goto check_bkflag_else_sense
-
-    call store_EEPROM_log
-    bsf BACK_FLAG, 0 ;set back flag
-    bsf PORTC, 6     ;reverse the direction of the motor
-    ;call test
-    ;call delayquartersecond
-    call delayquartersecond
-    return
-
-check_bkflag_else_sense
-    btfss BACK_FLAG, 0
-    goto sense_light
-
-    tstfsz TOTAL_LIGHT  ;test if it's 0 first
-    dcfsnz TOTAL_LIGHT ;decrement counter, if not 0, skip setting END_FLAG
-    bsf END_FLAG, 0        ;set END_FLAG
-
-    bcf PORTC, 7
-    bsf PORTC, 6
-    call delay5ms
-    call delay5ms
-    call delay5ms
-    call delay5ms
-    call delay5ms
-    ;call delayquartersecond
-;    call delayquartersecond
-    return
-
 sense_light
+    bcf PORTC, 6
+    bcf PORTC, 7
+    call delayquartersecond
+
     store temp2, 0x00
     store temp1, 0x00       ;temp1 stores the number of LEDs that are working
     ;call test
     call delay5ms
     call delay5ms 
-    ;call delayquartersecond
-    ;call delayquartersecond
 
     ;read from RA1-3
     movff PORTC, PORTC_data
@@ -614,7 +582,7 @@ sense_light
     btfsc STATUS, Z
     incf three_working  ; add if true
 
-    incf TOTAL_LIGHT
+    ;incf TOTAL_LIGHT
     bcf PORTC, 6        ;run the motor again
     bsf PORTC, 7
     
@@ -622,11 +590,18 @@ sense_light
     call delay5ms
     call delay5ms
     call delay5ms
-    ;call delay5ms
-;    call delayquartersecond   ;move this light away
-;    bcf INTCON3, INT2IF ;clear INT2 flag
-;    retfie
     return 
+
+IR_back
+    bcf PORTC, 6
+    bcf PORTC, 7
+    call delayquartersecond
+    bsf PORTC, 6
+    call delay2second
+    back_loop
+        btfss PORTC, 0  ;test if IR2 senses anything on the way back
+        bra back_loop
+    goto THE_END
 
 THE_END
         ;turns off motor
@@ -648,9 +623,9 @@ boot
 		call INIT_LCD                 ;initialize LCD
 ;        store   EEPROM_LOCH, 0x02     ;specify EEPROM location
 ;        store   EEPROM_LOCL, 0x00
-        store   BACK_FLAG, 0x0
-        store   END_FLAG, 0x0
-        store   TOTAL_LIGHT, 0x0 
+;        store   BACK_FLAG, 0x0
+;        store   END_FLAG, 0x0
+;        store   TOTAL_LIGHT, 0x0
         call InitializeI2C
         ;call SetRTC
         ;call test_EEPROM
@@ -745,19 +720,29 @@ operation_selected
         bcf PORTC, 6
         bsf PORTC, 7
 
-        call delay5ms
-        call delay5ms
-        call delay5ms
-        call delay5ms
         ;call delay5ms
         ;call delay5ms
-        ;call delayquartersecond
+        ;call delay5ms
+        ;call delay5ms
+        ;call delay5ms
+        ;call delay5ms
+        call delayquartersecond
         op_loop
+            btfsc PORTC, 0; test if IR2 senses anything
+            goto IR_back
+
+            bcf PORTC, 6
+            bcf PORTC, 7
+            call delay44us
+            bcf PORTC, 6
+            bsf PORTC, 7
+
             btfsc PORTD, 0; test if IR senses anything (0->nothing)
-            call IR_ISR
-            btfss END_FLAG, 0 ;if END_FLAG is set, don't loop, go to the END
+            call sense_light
+
+            call delay44us
             bra op_loop
-        goto THE_END
+        ;goto THE_END
 
 log_selected
 ; what to do if log selected

@@ -32,7 +32,7 @@ display     macro   table_name
             global Home, CLR_PORTS, CLR_LCD, WR_DATA, delay2second, delay1second, INIT_LCD, delayquartersecond
             global log_menu, main_menu, operation, upload_msg, viewlog_msg
             global operation, finito, lapsed, test, ISR_message
-            global delay5ms
+            global delay5ms, delay44us
             global zero_message, one_message, two_message, three_message
 ;;;;;;;;;;;;;;Menu options;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Home
