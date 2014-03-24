@@ -106,7 +106,7 @@ operation
 finito
         call CLR_LCD
         display Finished
-        call delay2second
+        call delay1second
         return 
 
 lapsed
@@ -259,7 +259,7 @@ delay1second
         return
 
 delayquartersecond
-    movlw   D'20'
+    movlw   D'5'
     movwf   delay3, 0
     dqsloop
         decf    delay3, 1
